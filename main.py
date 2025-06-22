@@ -6,6 +6,122 @@ import tkintermapview
 carefacility:list=[]
 boarder:list=[]
 worker:list=[]
+temporary:list=[]
+
+class temporarys:
+    def __init__(self,name,location):
+        self.name=name
+        self.location=location
+        self.coordinates=self.get_coordinates()
+        self.marker=map_widget.set_marker(self.coordinates[0],self.coordinates[1])
+
+    def get_coordinates(self) -> list:
+        import requests
+        from bs4 import BeautifulSoup
+        url = f"https://pl.wikipedia.org/wiki/{self.location}"
+        response = requests.get(url).text
+        response_html = BeautifulSoup(response, "html.parser")
+        longitude = float(response_html.select(".longitude")[1].text.replace(",", "."))
+        latitude = float(response_html.select(".latitude")[1].text.replace(",", "."))
+        print(longitude)
+        print(latitude)
+        return [latitude, longitude]
+
+def create_boarders():
+
+    for idx,val in enumerate(temporary):
+        temporary[idx].marker.delete()
+
+    temporary.clear()
+    u=listbox_lista_obiketow.index(ACTIVE)
+    d=carefacility[u].name
+
+    for idx,val in enumerate(boarder):
+        if boarder[idx].location2==d:
+            val=temporarys(name=boarder[idx].name,location=boarder[idx].location)
+            temporary.append(val)
+        boarder[idx].marker.delete()
+        worker[idx].marker.delete()
+
+    show_boarder_temp()
+    button_pokaz_szczegoly_obiektu_boarder.configure(command=show_boarder_temp_details)
+
+def show_boarder_temp():
+    listbox_lista_boarder.delete(0,END)
+    listbox_lista_obiektow_worker.delete(0,END)
+    for idx,val in enumerate(temporary):
+        listbox_lista_boarder.insert(idx,f'{idx+1}.{val.name}')
+
+def show_boarder_temp_details():
+    o=listbox_lista_boarder.index(ACTIVE)
+    name=temporary[o].name
+    location=temporary[o].location
+
+    label_szczegoly_name_wartosc.config(text=name)
+    label_szczegoly_location_wartosc.config(text=location)
+    label_szczegoly_location2_wartosc.config(text='...')
+
+    map_widget.set_position(temporary[o].coordinates[0],temporary[o].coordinates[1])
+    map_widget.set_zoom(17)
+
+
+def create_workers():
+    for idx, val in enumerate(temporary):
+        temporary[idx].marker.delete()
+
+    temporary.clear()
+    u = listbox_lista_obiketow.index(ACTIVE)
+    d = carefacility[u].name
+
+    for idx, val in enumerate(worker):
+        if worker[idx].location2 == d:
+            val = temporarys(name=worker[idx].name, location=worker[idx].location)
+            temporary.append(val)
+        boarder[idx].marker.delete()
+        worker[idx].marker.delete()
+
+    show_worker_temp()
+    button_pokaz_szczegoly_obiektu_worker.configure(command=show_worker_temp_details)
+
+
+def show_worker_temp():
+    listbox_lista_boarder.delete(0, END)
+    listbox_lista_obiektow_worker.delete(0, END)
+    for idx, val in enumerate(temporary):
+        listbox_lista_obiektow_worker.insert(idx, f'{idx + 1}.{val.name}')
+
+
+def show_worker_temp_details():
+    o = listbox_lista_obiektow_worker.index(ACTIVE)
+    name = temporary[o].name
+    location = temporary[o].location
+
+    label_szczegoly_name_wartosc.config(text=name)
+    label_szczegoly_location_wartosc.config(text=location)
+    label_szczegoly_location2_wartosc.config(text='...')
+
+    map_widget.set_position(temporary[o].coordinates[0], temporary[o].coordinates[1])
+    map_widget.set_zoom(17)
+
+def restore():
+    show_boarder()
+    show_worker()
+    for idx,val in enumerate(temporary):
+        temporary[idx].marker.delete()
+
+    for idx,val in enumerate(boarder):
+        boarder[idx].coordinates=boarder[idx].get_coordinates()
+        boarder[idx].marker=map_widget.set_marker(boarder[idx].coordinates[0],boarder[idx].coordinates[1])
+
+    for idx,val in enumerate(worker):
+        worker[idx].coordinates=worker[idx].get_coordinates()
+        worker[idx].marker=map_widget.set_marker(worker[idx].coordinates[0],worker[idx].coordinates[1])
+
+    button_pokaz_szczegoly_obiektu_worker.configure(command=show_worker_details)
+    button_pokaz_szczegoly_obiektu_boarder.configure(command=show_boarder_details)
+
+
+
 
 class carefacilitys:
     def __init__(self,name,location):
@@ -87,15 +203,30 @@ def update_carefacility(i):
     show_carefacility()
 
 
-def show_carefacility_details():
+def show_carefacility_workers():
     i=listbox_lista_obiketow.index(ACTIVE)
     name=carefacility[i].name
     location=carefacility[i].location
     label_szczegoly_name_wartosc.config(text=name)
     label_szczegoly_location_wartosc.config(text=location)
+    label_szczegoly_location2_wartosc.config(text='...')
+    create_workers()
 
     map_widget.set_position(carefacility[i].coordinates[0],carefacility[i].coordinates[1])
     map_widget.set_zoom(17)
+
+def show_carefacility_boarders():
+    i=listbox_lista_obiketow.index(ACTIVE)
+    name=carefacility[i].name
+    location=carefacility[i].location
+    label_szczegoly_name_wartosc.config(text=name)
+    label_szczegoly_location_wartosc.config(text=location)
+    label_szczegoly_location2_wartosc.config(text='...')
+    create_boarders()
+
+    map_widget.set_position(carefacility[i].coordinates[0],carefacility[i].coordinates[1])
+    map_widget.set_zoom(17)
+
 
 
 
@@ -304,10 +435,9 @@ def show_worker_details():
 
 
 
-
 root = Tk()
 root.geometry("1200x760")
-root.title("Map Book MJ")
+root.title("Project POP UK")
 
 
 ramka_lista_obiektow=Frame(root)
@@ -325,8 +455,10 @@ label_lista_obiektow=Label(ramka_lista_obiektow, text="Lista domów opieki")
 label_lista_obiektow.grid(row=0, column=0,columnspan=2)
 listbox_lista_obiketow=Listbox(ramka_lista_obiektow, width=40, height=10)
 listbox_lista_obiketow.grid(row=1, column=0, columnspan=3)
-button_pokaz_szczegoly_obiektu=Button(ramka_lista_obiektow, text='Pokaż szczegóły', command=show_carefacility_details)
+button_pokaz_szczegoly_obiektu=Button(ramka_lista_obiektow, text='Pokaż szczegóły pensjonariuszy', command=show_carefacility_boarders)
 button_pokaz_szczegoly_obiektu.grid(row=2, column=0)
+button_pokaz_szczegoly_obiektu=Button(ramka_lista_obiektow, text='Pokaż szczegóły pracowników', command=show_carefacility_workers)
+button_pokaz_szczegoly_obiektu.grid(row=3, column=0)
 button_usun_obiekt=Button(ramka_lista_obiektow, text='Usuń obiekt', command=remove_carefacility)
 button_usun_obiekt.grid(row=2, column=1)
 button_edytuj_obiekt=Button(ramka_lista_obiektow, text='Edytuj obiekt', command=edit_carefacility)
@@ -380,6 +512,9 @@ button_dodaj_boarder.grid(row=6, column=0, columnspan=2)
 
 button_dodaj_worker=Button(ramka_formularz, text='Dodaj pracownika',command=add_worker)
 button_dodaj_worker.grid(row=7, column=0, columnspan=2)
+
+button_odswiez=Button(ramka_formularz,text='Odśwież listę',command=restore)
+button_odswiez.grid(row=8, column=0, columnspan=2)
 
 # ramka_szczegoly_obiektow
 label_szczegoly_obiektow=Label(ramka_szczegoly_obiektow, text="Szczegoly obiektu:")
